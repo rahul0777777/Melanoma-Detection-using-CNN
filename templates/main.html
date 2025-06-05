@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Melanoma Skin Cancer Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Melanoma Skin Cancer Detection Using Deep Learning</h1>
+        </header>
+        <nav>
+            <button onclick="document.getElementById('imageUpload').click();">Browse Input</button>
+            <form id="uploadForm" style="display: none;">
+                <input id="imageUpload" type="file" name="image" onchange="uploadImage();">
+            </form>
+            <button onclick="processImage();">Processing</button>
+            <button onclick="classifyImage();">Classification</button>
+            <button onclick="resetForm();">Reset</button>
+            <button onclick="exitApp();">Exit</button>
+        </nav>
+        <main>
+            <div class="image-container">
+                <div class="image-box" id="originalImage">Original Image</div>
+                <div class="image-box" id="grayImage">Gray Conversion</div>
+                <div class="image-box" id="dullrazorImage">DullRazor</div>
+                <div class="image-box" id="noiseRemovedImage">Noise Removal</div>
+                <div class="image-box" id="enhancedImage">Enhancement</div>
+                <div class="image-box" id="segmentedImage">Segmentation</div>
+            </div>
+            <div class="results">
+                <h2>Classification Result</h2>
+                <p id="classificationResult"></p>
+            </div>
+        </main>
+    </div>
+    <script>
+        let selectedFile;
+
+        function uploadImage() {
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageUpload');
+            selectedFile = fileInput.files[0];
+            formData.append('image', selectedFile);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filename) {
+                    document.getElementById('originalImage').innerHTML = `<img src="/inputs/${data.filename}" alt="Original Image">`;
+                    selectedFile = data.filename;
+                } else {
+                    alert('Error uploading image');
+                }
+            })
+            .catch(error => console.error('Error uploading image:', error));
+        }
+
+        function processImage() {
+            fetch('/preprocess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filename: selectedFile })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('grayImage').innerHTML = `<img src="/${data.gray}" alt="Gray Conversion">`;
+                    document.getElementById('dullrazorImage').innerHTML = `<img src="/${data.dullrazor}" alt="DullRazor">`;
+                    document.getElementById('noiseRemovedImage').innerHTML = `<img src="/${data.noise_removed}" alt="Noise Removal">`;
+                    document.getElementById('enhancedImage').innerHTML = `<img src="/${data.enhanced}" alt="Enhancement">`;
+                    document.getElementById('segmentedImage').innerHTML = `<img src="/${data.segmented}" alt="Segmentation">`;
+                }
+            })
+            .catch(error => console.error('Error preprocessing image:', error));
+        }
+
+        function classifyImage() {
+            fetch('/classify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ filename: selectedFile })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('classificationResult').innerText = data.message;
+                }
+            })
+            .catch(error => console.error('Error classifying image:', error));
+        }
+
+        function resetForm() {
+            document.getElementById('originalImage').innerHTML = 'Original Image';
+            document.getElementById('grayImage').innerHTML = 'Gray Conversion';
+            document.getElementById('dullrazorImage').innerHTML = 'DullRazor';
+            document.getElementById('noiseRemovedImage').innerHTML = 'Noise Removal';
+            document.getElementById('enhancedImage').innerHTML = 'Enhancement';
+            document.getElementById('segmentedImage').innerHTML = 'Segmentation';
+            document.getElementById('classificationResult').innerText = '';
+        }
+
+        function exitApp() {
+            window.close();
+        }
+    </script>
+</body>
+</html>
